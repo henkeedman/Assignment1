@@ -59,8 +59,6 @@ def read_coordinate_file(file):
 def plot_points(coords, connection, path):
     line = []
     mainline = []
-    starttime=time.time()
-
     for j, data in enumerate(connection):
         start, stop = data
         line.append((coords[:, start], coords[:, stop]))
@@ -80,7 +78,6 @@ def plot_points(coords, connection, path):
     ax.add_collection(mainline_segments)
     ax.set_xlim((min(coords[0])), max(coords[0]))
     ax.set_ylim((min(coords[1])), max(coords[1]))
-    print('plotting time = ', time.time() - starttime)
     plt.show()
 
 
@@ -187,6 +184,7 @@ else:
     csr = construct_graph(connection, connection_distance, N)
     min_distances, predexessor = scipy.sparse.csgraph.dijkstra(csr, return_predecessors=True, indices=[start_node])
     path = compute_path(predexessor, start_node, end_node)
+    print('Totaltid', time.time() - start_time, 'sekunder')
     if choice2 == 'y':
         plot_points(coords,connection,path)
 

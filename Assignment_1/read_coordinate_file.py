@@ -57,19 +57,19 @@ def plot_points(coords, connection, path):
     line = []
     mainline = []
     starttime=time.time()
-    #print('DENNA')
-    #print(connection)
-    for j in range(len(connection)):
-        (start, stop) = (connection[j, :])
-        line.append((coords[:, int(start)], coords[:, int(stop)]))
 
-    for j in range(len(path)-1):
-        start = path[j]
-        stop = path[j+1]
-        mainline.append((coords[:, int(start)], coords[:, int(stop)]))
+    for j, data in enumerate(connection):
+        start, stop = data
+        line.append((coords[:, start], coords[:, stop]))
+
+    start = path[0]
+    for j, data in enumerate(path[1:-1]):
+        stop = data
+        mainline.append((coords[:, start], coords[:, stop]))
+        start = stop
 
     line_segments = LineCollection(line)
-    mainline_segments=LineCollection(mainline, linewidths=10, colors='r')
+    mainline_segments = LineCollection(mainline, linewidths=10, colors='r')
     fig = plt.figure(figsize=(10, 15))
     plt.plot(coords[0], coords[1], 'ro', markersize=1)
     ax = fig.gca()
@@ -77,7 +77,7 @@ def plot_points(coords, connection, path):
     ax.add_collection(mainline_segments)
     ax.set_xlim((min(coords[0])), max(coords[0]))
     ax.set_ylim((min(coords[1])), max(coords[1]))
-    print(time.time() - start)
+    print('plotting time = ', time.time() - starttime)
     plt.show()
 
 
@@ -91,31 +91,26 @@ def construct_graph_connection(coord_list, radius):
             """
     dummy = int(coord_list.size/2)
     coord_list_temp = coord_list
-    connection_distance = np.array([])
-    connection = np.array([])
+    connection_distance = []
+    connection = []
     for j, data in enumerate(coord_list.transpose()):
         x = data[0]
         y = data[1]
+
+        '''Calculate the relative distance of the nodes'''
         coord_list_temp[0] = coord_list[0]-x
         coord_list_temp[1] = coord_list[1]-y
         distance = np.hypot(coord_list_temp[0], coord_list_temp[1])
 
-    #for j in range(dummy):
-        #x = coord_list[0, j]
-        #print(x)
-        #y = coord_list[1, j]
-        '''Calculate the relative distance of the nodes'''
-        #coord_list_temp[0] = coord_list[0]-x
-        #coord_list_temp[1] = coord_list[1]-y
-        #distance = np.hypot(coord_list_temp[0], coord_list_temp[1])
         '''remove nodes which isn't in range'''
-        for i in range(j, dummy):
-            if distance[i] < radie:
-                temp = [j, i], [i, j]
-                connection = np.append(connection, temp)
-                distance_temp = distance[i], distance[i]
-                connection_distance = np.append(connection_distance, distance_temp)
-    connection = connection.reshape(connection_distance.size, 2)
+        for i, data in enumerate(distance):
+            if data < radie:
+                connection.append([i, j])
+                connection_distance.append(data)
+
+    connection_distance = np.array(connection_distance)
+    connection = np.array(connection)
+    connection = connection.reshape(len(connection_distance), 2)
     return connection, connection_distance
 
 
@@ -169,24 +164,27 @@ def compute_path(predecessor_matrix, start_node, end_node):
 start = time.time()
 coords = read_coordinate_file(file)
 #print(time.time()-start)
-start = time.time()
+
+grafen=time.time()
 (connection, connection_distance) = construct_graph_connection(coords, radie)
 #print(time.time()-start)
-start = time.time()
+grafen=time.time() - grafen
+print(grafen)
+
 #k = construct_fast_graph_connection(coords, radius)
 N = coords.size/2
 csr = construct_graph(connection,connection_distance, coords.size/2 )
 #csr = scipy.sparse.csr_matrix(k ,shape =(N, N))
-start = time.time()
-#print(time.time()-start)
-start = time.time()
+
 min_distances, predexessor= scipy.sparse.csgraph.dijkstra(csr,return_predecessors=True)
 #print(time.time()-start)
+
+
 
 path = compute_path(predexessor, start_node, end_node)
 #print(time.time()-start)
 
 plot_points(coords, connection, path)
 #print(time.time()-start)
-
+print(min_distances[start_node, end_node])
 print(path)

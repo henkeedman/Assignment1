@@ -67,7 +67,7 @@ def plot_points(coords, connection, path):
         stop = data
         mainline.append((coords[:, start], coords[:, stop]))
         start = stop
-
+    mainline.append((coords[:, start], coords[:, path[-1]]))
     line_segments = LineCollection(line)
     mainline_segments = LineCollection(mainline, linewidths=10, colors='r')
     fig = plt.figure(figsize=(10, 15))
@@ -78,7 +78,7 @@ def plot_points(coords, connection, path):
     ax.set_xlim((min(coords[0])), max(coords[0]))
     ax.set_ylim((min(coords[1])), max(coords[1]))
     print('plotting time = ', time.time() - starttime)
-    plt.show()
+    #plt.show()
 
 
 def construct_graph_connection(coord_list, radius):
@@ -156,35 +156,31 @@ def compute_path(predecessor_matrix, start_node, end_node):
     path = []
     while j != i :
         path = [j]+path
-        j = predecessor_matrix[i,j]
+        j = predecessor_matrix[0,j]
     path = [i]+path
     return path
 
 
-start = time.time()
+start_time = time.time()
 coords = read_coordinate_file(file)
+
 #print(time.time()-start)
 
 grafen=time.time()
-(connection, connection_distance) = construct_graph_connection(coords, radie)
-#print(time.time()-start)
+#(connection, connection_distance) = construct_graph_connection(coords, radie)
 grafen=time.time() - grafen
 print('construct_graph_time = ', grafen)
 
-#k = construct_fast_graph_connection(coords, radius)
-N = coords.size/2
-csr = construct_graph(connection,connection_distance, coords.size/2 )
-#csr = scipy.sparse.csr_matrix(k ,shape =(N, N))
+snabb_tid= time.time()
+k = construct_fast_graph_connection(coords, radie)
+print('snabbtid = ',snabb_tid - time.time())
+#N = coords.size/2
+#csr = construct_graph(connection,connection_distance, N )
 
-min_distances, predexessor= scipy.sparse.csgraph.dijkstra(csr,return_predecessors=True)
-#print(time.time()-start)
-
-
-
+min_distances, predexessor= scipy.sparse.csgraph.dijkstra(k, return_predecessors=True, indices=[start_node])
 path = compute_path(predexessor, start_node, end_node)
-#print(time.time()-start)
+print('Totaltid', start_time-time.time())
 
-plot_points(coords, connection, path)
-#print(time.time()-start)
-print(min_distances[start_node, end_node])
-print(path)
+print('Distance = ',min_distances[0, end_node])
+print('best path = ',path)
+

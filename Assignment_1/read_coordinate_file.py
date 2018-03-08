@@ -5,10 +5,13 @@ import math as m
 import time
 import scipy.sparse
 import scipy.spatial
+import sys
 
 #file = 'SampleCoordinates.txt'
 file = 'GermanyCities.txt'
 #file ='HungaryCities.txt'
+
+
 
 if file == 'SampleCoordinates.txt':
     start_node = 0
@@ -78,7 +81,7 @@ def plot_points(coords, connection, path):
     ax.set_xlim((min(coords[0])), max(coords[0]))
     ax.set_ylim((min(coords[1])), max(coords[1]))
     print('plotting time = ', time.time() - starttime)
-    #plt.show()
+    plt.show()
 
 
 def construct_graph_connection(coord_list, radius):
@@ -89,7 +92,6 @@ def construct_graph_connection(coord_list, radius):
             :return: Connections; an array with all the nodes in range of eachother
                      Connection_distance; ann array with the range between all nodes which are in range of eachother
             """
-    dummy = int(coord_list.size/2)
     coord_list_temp = coord_list
     connection_distance = []
     connection = []
@@ -124,10 +126,10 @@ def construct_fast_graph_connection(coord_list, radie):
                 """
 
     coord_list = np.transpose(coord_list)
-    fortheloveofgod = scipy.spatial.cKDTree(coord_list)
-    coord_lista = scipy.spatial.cKDTree(coord_list)
-    k = scipy.spatial.cKDTree.sparse_distance_matrix(coord_lista, fortheloveofgod, radie, p=2.)
-    return k
+    coord_list_tree = scipy.spatial.cKDTree(coord_list)
+    sparse_graph = scipy.spatial.cKDTree.sparse_distance_matrix(coord_list_tree, coord_list_tree, radie, p=2.)
+
+    return sparse_graph
 
 
 def construct_graph(indices, distances, N):
@@ -154,33 +156,40 @@ def compute_path(predecessor_matrix, start_node, end_node):
     i = start_node
     j = end_node
     path = []
-    while j != i :
+    while j != i:
         path = [j]+path
-        j = predecessor_matrix[0,j]
+        j = predecessor_matrix[0, j]
     path = [i]+path
     return path
 
+choice = input('Run fast version? (y/n)')
+if choice == 'n':
+    choice2 = input('Include plotting? (y/n)')
+elif choice != 'y':
+    print('Invalid choice, run again')
+    sys.exit(1)
 
 start_time = time.time()
 coords = read_coordinate_file(file)
 
-#print(time.time()-start)
 
-grafen=time.time()
-#(connection, connection_distance) = construct_graph_connection(coords, radie)
-grafen=time.time() - grafen
-print('construct_graph_time = ', grafen)
+if choice == 'y':
+    snabb_tid = time.time()
+    csr = construct_fast_graph_connection(coords, radie)
+    print('Tid för CkdTree = ',  time.time()-snabb_tid,'sekunder')
+    min_distances, predexessor = scipy.sparse.csgraph.dijkstra(csr, return_predecessors=True, indices=[start_node])
+    path = compute_path(predexessor, start_node, end_node)
+    print('Totaltid', time.time()-start_time,'sekunder')
 
-snabb_tid= time.time()
-k = construct_fast_graph_connection(coords, radie)
-print('snabbtid = ',snabb_tid - time.time())
-#N = coords.size/2
-#csr = construct_graph(connection,connection_distance, N )
+else:
+    connection, connection_distance = construct_graph_connection(coords, radie)
+    N = coords.size/2
+    csr = construct_graph(connection, connection_distance, N)
+    min_distances, predexessor = scipy.sparse.csgraph.dijkstra(csr, return_predecessors=True, indices=[start_node])
+    path = compute_path(predexessor, start_node, end_node)
+    if choice2 == 'y':
+        plot_points(coords,connection,path)
 
-min_distances, predexessor= scipy.sparse.csgraph.dijkstra(k, return_predecessors=True, indices=[start_node])
-path = compute_path(predexessor, start_node, end_node)
-print('Totaltid', start_time-time.time())
-
-print('Distance = ',min_distances[0, end_node])
-print('best path = ',path)
+print('Distance = ', min_distances[0, end_node])
+print('best path = ', path)
 

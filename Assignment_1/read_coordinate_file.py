@@ -169,7 +169,7 @@ grafen=time.time()
 (connection, connection_distance) = construct_graph_connection(coords, radie)
 #print(time.time()-start)
 grafen=time.time() - grafen
-print(grafen)
+print('construct_graph_time = ', grafen)
 
 #k = construct_fast_graph_connection(coords, radius)
 N = coords.size/2

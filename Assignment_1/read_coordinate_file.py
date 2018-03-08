@@ -6,9 +6,9 @@ import time
 import scipy.sparse
 import scipy.spatial
 
-file='SampleCoordinates.txt'
+#file='SampleCoordinates.txt'
 #file = 'GermanyCities.txt'
-#file ='HungaryCities.txt'
+file ='HungaryCities.txt'
 if file == 'SampleCoordinates.txt':
     start_node=0
     end_node=5
@@ -32,18 +32,14 @@ def read_coordinate_file(file):
     x_coords = []
     y_coords = []
 
-    while 1:
+    for line in file1:
+        #line.readline(file1)
+        line = line.replace('{', '')
+        line = line.replace('}', '')
+        (x, y) = line.split(",")
+        y_coords.extend([m.log((m.tan(m.pi/4+m.pi*float(y)/360)))])
+        x_coords.extend([float(x)*m.pi/180])
 
-        line = file1.readline()
-        if line:
-            line = line.replace('{', '')
-            line = line.replace('}', '')
-            (x, y) = line.split(",")
-            y_coords.extend([m.log((m.tan(m.pi/4+m.pi*float(y)/360)))])
-            x_coords.extend([float(x)*m.pi/180])
-
-        else:
-            break
     file1.close()
     coords = np.array([y_coords, x_coords])
 

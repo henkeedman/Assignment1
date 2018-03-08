@@ -22,10 +22,6 @@ else:
     end_node=702
     radius=0.005
 
-
-
-
-
 def read_coordinate_file(file):
     """             Function to read coordinatefiles
                     :param file: file to be read

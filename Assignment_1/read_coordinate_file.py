@@ -6,22 +6,22 @@ import time
 import scipy.sparse
 import scipy.spatial
 
-file = 'SampleCoordinates.txt'
-#file = 'GermanyCities.txt'
+#file = 'SampleCoordinates.txt'
+file = 'GermanyCities.txt'
 #file ='HungaryCities.txt'
 
 if file == 'SampleCoordinates.txt':
     start_node = 0
     end_node = 5
-    radius = 0.08
+    radie = 0.08
 elif file == 'GermanyCities.txt':
     start_node = 10584
     end_node = 1573
-    radius = 0.0025
+    radie = 0.0025
 else:
     start_node = 311
     end_node = 702
-    radius = 0.005
+    radie = 0.005
 
 
 def read_coordinate_file(file):
@@ -35,10 +35,11 @@ def read_coordinate_file(file):
     y_coords = []
 
     for line in file1:
-        #line.readline(file1)
-        line = line.replace('{', '')
-        line = line.replace('}', '')
-        (x, y) = line.split(",")
+        line = line.strip()
+        line = line.strip('{')
+        line = line.strip('}')
+        (y, x) = line.split(",")
+        line.strip()
         ''' 
             x and y are expressed as latitude and longitude. These are converted with the Mercator projection (from Computer assignment 1)
             into x and y coordinates.
@@ -48,24 +49,25 @@ def read_coordinate_file(file):
         x_coords.extend([float(x)*m.pi/180])
 
     file1.close()
-    coords = np.array([y_coords, x_coords])
+    coords = np.array([x_coords, y_coords])
     return coords
 
 
 def plot_points(coords, connection, path):
     line = []
     mainline = []
-    start=time.time()
+    starttime=time.time()
     #print('DENNA')
     #print(connection)
     for j in range(len(connection)):
         (start, stop) = (connection[j, :])
         line.append((coords[:, int(start)], coords[:, int(stop)]))
-    print(time.time()-start)
+
     for j in range(len(path)-1):
         start = path[j]
         stop = path[j+1]
         mainline.append((coords[:, int(start)], coords[:, int(stop)]))
+
     line_segments = LineCollection(line)
     mainline_segments=LineCollection(mainline, linewidths=10, colors='r')
     fig = plt.figure(figsize=(10, 15))
@@ -75,6 +77,7 @@ def plot_points(coords, connection, path):
     ax.add_collection(mainline_segments)
     ax.set_xlim((min(coords[0])), max(coords[0]))
     ax.set_ylim((min(coords[1])), max(coords[1]))
+    print(time.time() - start)
     plt.show()
 
 
@@ -107,7 +110,7 @@ def construct_graph_connection(coord_list, radius):
         #distance = np.hypot(coord_list_temp[0], coord_list_temp[1])
         '''remove nodes which isn't in range'''
         for i in range(j, dummy):
-            if distance[i] < radius:
+            if distance[i] < radie:
                 temp = [j, i], [i, j]
                 connection = np.append(connection, temp)
                 distance_temp = distance[i], distance[i]
@@ -116,7 +119,7 @@ def construct_graph_connection(coord_list, radius):
     return connection, connection_distance
 
 
-def construct_fast_graph_connection(coord_list, radius):
+def construct_fast_graph_connection(coord_list, radie):
     """
                 sorts out which nodes are in range of eachoter object.
                 :param coord_list: the coordinates of each node
@@ -128,7 +131,7 @@ def construct_fast_graph_connection(coord_list, radius):
     coord_list = np.transpose(coord_list)
     fortheloveofgod = scipy.spatial.cKDTree(coord_list)
     coord_lista = scipy.spatial.cKDTree(coord_list)
-    k = scipy.spatial.cKDTree.sparse_distance_matrix(coord_lista, fortheloveofgod, radius, p=2.)
+    k = scipy.spatial.cKDTree.sparse_distance_matrix(coord_lista, fortheloveofgod, radie, p=2.)
     return k
 
 
@@ -167,7 +170,7 @@ start = time.time()
 coords = read_coordinate_file(file)
 #print(time.time()-start)
 start = time.time()
-(connection, connection_distance) = construct_graph_connection(coords, radius)
+(connection, connection_distance) = construct_graph_connection(coords, radie)
 #print(time.time()-start)
 start = time.time()
 #k = construct_fast_graph_connection(coords, radius)
@@ -186,4 +189,4 @@ path = compute_path(predexessor, start_node, end_node)
 plot_points(coords, connection, path)
 #print(time.time()-start)
 
-#print(path)
+print(path)

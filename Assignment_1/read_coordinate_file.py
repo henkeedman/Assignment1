@@ -7,9 +7,9 @@ import scipy.sparse
 import scipy.spatial
 import sys
 
-#file = 'SampleCoordinates.txt'
+file = 'SampleCoordinates.txt'
 #file = 'GermanyCities.txt'
-file ='HungaryCities.txt'
+#file ='HungaryCities.txt'
 
 if file == 'SampleCoordinates.txt':
     start_node = 0
@@ -169,9 +169,6 @@ def compute_path(predecessor_matrix, start_node, end_node):
     return path
 
 
-'''
-The user may choose how to run the program. 
-'''
 choice = input('Run fast version? (y/n)')
 if choice == 'n':
     choice2 = input('Include plotting? (y/n)')

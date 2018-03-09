@@ -13,7 +13,7 @@ def read_coordinate_file(file):
     """             Function to read coordinatefiles
                     :param file: file to be read
                     :return coords: NumPy array of the nodes and their coordinates
-                    """
+    """
 
     file1 = open(file, 'r')
     x_coords = []

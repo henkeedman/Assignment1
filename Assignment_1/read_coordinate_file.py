@@ -39,8 +39,8 @@ def read_coordinate_file(file):
 
 def plot_points(coords, connection, path):
     '''
-    Plots a map containing points for each city, blue lines for possible connections and a red thick line representing
-    the closest path between two selected cities.
+    Plots a map containing points for each node, blue lines for possible connections and a red thick line representing
+    the closest path between two selected nodes.
     :param coords: List of the nodes and their coordinates
     :param connection: An array with all the nodes in range of eachother
     :param path: List of shortest path between the nodes

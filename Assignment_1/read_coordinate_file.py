@@ -38,6 +38,14 @@ def read_coordinate_file(file):
 
 
 def plot_points(coords, connection, path):
+    '''
+    Plots a map containing points for each city, blue lines for possible connections and a red thick line representing
+    the closest path between two selected cities.
+    :param coords: List of the nodes and their coordinates
+    :param connection: An array with all the nodes in range of eachother
+    :param path: List of shortest path between the nodes
+
+    '''
     line = []
     mainline = []
     check = time.time()
@@ -153,10 +161,16 @@ def compute_path(predecessor_matrix, start_node, end_node):
     #Go through the predecessor matrix to save the data in a list
     while j != i:
         path = [j]+path
+
         j = predecessor_matrix[0, j]
+
     path = [i]+path
     return path
 
+
+'''
+The user may choose how to run the program. 
+'''
 choice = input('Run fast version? (y/n)')
 if choice == 'n':
     choice2 = input('Include plotting? (y/n)')
@@ -206,7 +220,7 @@ else:
     path = compute_path(predexessor, start_node, end_node)
     print('Totaltid exl. plot', time.time() - start_time, 'sekunder')
     if choice2 == 'y':
-        plot_points(coords,connection,path)
+        plot_points(coords, connection,path)
 
 print('Distance = ', min_distances[0, end_node])
 print('best path = ', path)

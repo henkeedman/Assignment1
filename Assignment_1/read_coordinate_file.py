@@ -67,7 +67,7 @@ def plot_points(coords, connection, path):
         stop = data
         mainline.append((coords[:, start], coords[:, stop]))
         start = stop
-
+    mainline.append((coords[:, start], coords[:, path[-1]]))
     line_segments = LineCollection(line)
     mainline_segments = LineCollection(mainline, linewidths=10, colors='r')
     fig = plt.figure(figsize=(10, 15))
@@ -89,7 +89,6 @@ def construct_graph_connection(coord_list, radius):
             :return: Connections; an array with all the nodes in range of eachother
                      Connection_distance; ann array with the range between all nodes which are in range of eachother
             """
-    dummy = int(coord_list.size/2)
     coord_list_temp = coord_list
     connection_distance = []
     connection = []
@@ -154,9 +153,9 @@ def compute_path(predecessor_matrix, start_node, end_node):
     i = start_node
     j = end_node
     path = []
-    while j != i :
+    while j != i:
         path = [j]+path
-        j = predecessor_matrix[i,j]
+        j = predecessor_matrix[i, j]
     path = [i]+path
     return path
 
@@ -176,7 +175,7 @@ N = coords.size/2
 csr = construct_graph(connection,connection_distance, coords.size/2 )
 #csr = scipy.sparse.csr_matrix(k ,shape =(N, N))
 
-min_distances, predexessor= scipy.sparse.csgraph.dijkstra(csr,return_predecessors=True)
+min_distances, predexessor= scipy.sparse.csgraph.dijkstra(csr, return_predecessors=True)
 #print(time.time()-start)
 
 

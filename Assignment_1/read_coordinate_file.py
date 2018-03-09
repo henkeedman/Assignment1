@@ -5,32 +5,14 @@ import math as m
 import time
 import scipy.sparse
 import scipy.spatial
+from scipy.sparse.csgraph import dijkstra
 import sys
-
-#file = 'SampleCoordinates.txt'
-file = 'GermanyCities.txt'
-#file ='HungaryCities.txt'
-
-
-
-if file == 'SampleCoordinates.txt':
-    start_node = 0
-    end_node = 5
-    radie = 0.08
-elif file == 'GermanyCities.txt':
-    start_node = 10584
-    end_node = 1573
-    radie = 0.0025
-else:
-    start_node = 311
-    end_node = 702
-    radie = 0.005
 
 
 def read_coordinate_file(file):
     """             Function to read coordinatefiles
                     :param file: file to be read
-                    :return: List of the nodes and their coordinates
+                    :return coords: NumPy array of the nodes and their coordinates
                     """
 
     file1 = open(file, 'r')
@@ -47,7 +29,6 @@ def read_coordinate_file(file):
             x and y are expressed as latitude and longitude. These are converted with the Mercator projection (from Computer assignment 1)
             into x and y coordinates.
         '''
-
         y_coords.extend([m.log((m.tan(m.pi/4+m.pi*float(y)/360)))])
         x_coords.extend([float(x)*m.pi/180])
 
@@ -59,16 +40,18 @@ def read_coordinate_file(file):
 def plot_points(coords, connection, path):
     line = []
     mainline = []
+    check = time.time()
+    #Create lines between every connection
     for j, data in enumerate(connection):
-        start, stop = data
-        line.append((coords[:, start], coords[:, stop]))
+        line.append((coords[:, data[0]], coords[:, data[1]]))
 
     start = path[0]
+    #Create the line showing the shortest path between two nodes
     for j, data in enumerate(path[1:-1]):
-        stop = data
-        mainline.append((coords[:, start], coords[:, stop]))
-        start = stop
+        mainline.append((coords[:, start], coords[:, data]))
+        start = data
     mainline.append((coords[:, start], coords[:, path[-1]]))
+
     line_segments = LineCollection(line)
     mainline_segments = LineCollection(mainline, linewidths=10, colors='r')
     fig = plt.figure(figsize=(10, 15))
@@ -78,6 +61,8 @@ def plot_points(coords, connection, path):
     ax.add_collection(mainline_segments)
     ax.set_xlim((min(coords[0])), max(coords[0]))
     ax.set_ylim((min(coords[1])), max(coords[1]))
+    plt.axis('Equal')
+    print('plottid=', time.time() - check, 'sekunder')
     plt.show()
 
 
@@ -86,8 +71,8 @@ def construct_graph_connection(coord_list, radius):
             sorts out which nodes are in range of each other object.
             :param coord_list: the coordinates of each node
             :param radius: the radius for what is considered in rang
-            :return: Connections; an array with all the nodes in range of eachother
-                     Connection_distance; ann array with the range between all nodes which are in range of eachother
+            :return: connection: an array with all the nodes in range of eachother
+                     connection_distance: ann array with the range between all nodes which are in range of eachother
             """
     coord_list_temp = coord_list
     connection_distance = []
@@ -117,16 +102,27 @@ def construct_fast_graph_connection(coord_list, radie):
     """
                 sorts out which nodes are in range of eachoter object.
                 :param coord_list: the coordinates of each node
-                :param radius: the radius for what is considered in rang
-                :return: k: an array with all the nodes in range of eachother and
-                 the range between all nodes which are in range of eachother
+                :param radie: the radius for what is considered in range
+                :return: csr: an sparse matrix containing all the connections and their distance
+                         connections: an NumPy array containing the indices which have connections
                 """
 
     coord_list = np.transpose(coord_list)
     coord_list_tree = scipy.spatial.cKDTree(coord_list)
     sparse_graph = scipy.spatial.cKDTree.sparse_distance_matrix(coord_list_tree, coord_list_tree, radie, p=2.)
+    connections_ckd = coord_list_tree.query_ball_tree(coord_list_tree, radie)
+    connections = []
 
-    return sparse_graph
+    #Changes the matrix format to match the one generated in the slower version
+    # (to allow for it to be used the same way)
+    for j, data in enumerate(connections_ckd):
+        for item in data:
+            connections.append([j, item])
+    connections = np.array(connections)
+    connections = connections.reshape(len(connections), 2)
+
+
+    return sparse_graph, connections
 
 
 def construct_graph(indices, distances, N):
@@ -146,13 +142,15 @@ def compute_path(predecessor_matrix, start_node, end_node):
                 Computes shortest path between two nodes
                 :param start_node: node to go from
                 :param end_node: Node to go to
-                :param predecessor_matrix: predecessormatrix of the nodes
+                :param predecessor_matrix: predecessormatrix of the nodes, from Dijikstra
                 :return: list of shortest path between the nodes
                 """
 
     i = start_node
     j = end_node
     path = []
+
+    #Go through the predecessor matrix to save the data in a list
     while j != i:
         path = [j]+path
         j = predecessor_matrix[0, j]
@@ -165,6 +163,26 @@ if choice == 'n':
 elif choice != 'y':
     print('Invalid choice, run again')
     sys.exit(1)
+else:
+    choice2 = input('Include plotting? (y/n)')
+
+file = 'SampleCoordinates.txt'
+#file = 'GermanyCities.txt'
+#file ='HungaryCities.txt'
+
+if file == 'SampleCoordinates.txt':
+    start_node = 0
+    end_node = 5
+    radie = 0.08
+elif file == 'GermanyCities.txt':
+    start_node = 10584
+    end_node = 1573
+    radie = 0.0025
+else:
+    start_node = 311
+    end_node = 702
+    radie = 0.005
+
 
 start_time = time.time()
 coords = read_coordinate_file(file)
@@ -172,10 +190,12 @@ coords = read_coordinate_file(file)
 
 if choice == 'y':
     snabb_tid = time.time()
-    csr = construct_fast_graph_connection(coords, radie)
+    csr, connection = construct_fast_graph_connection(coords, radie)
     print('Tid för CkdTree = ',  time.time()-snabb_tid,'sekunder')
-    min_distances, predexessor = scipy.sparse.csgraph.dijkstra(csr, return_predecessors=True, indices=[start_node])
+    min_distances, predexessor = dijkstra(csr, return_predecessors=True, indices=[start_node])
     path = compute_path(predexessor, start_node, end_node)
+    if choice2 == 'y':
+        plot_points(coords,connection,path)
     print('Totaltid', time.time()-start_time,'sekunder')
 
 else:
@@ -184,7 +204,7 @@ else:
     csr = construct_graph(connection, connection_distance, N)
     min_distances, predexessor = scipy.sparse.csgraph.dijkstra(csr, return_predecessors=True, indices=[start_node])
     path = compute_path(predexessor, start_node, end_node)
-    print('Totaltid', time.time() - start_time, 'sekunder')
+    print('Totaltid exl. plot', time.time() - start_time, 'sekunder')
     if choice2 == 'y':
         plot_points(coords,connection,path)
 

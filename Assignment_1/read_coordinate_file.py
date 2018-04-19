@@ -177,8 +177,8 @@ elif choice != 'y':
 else:
     choice2 = input('Include plotting? (y/n)')
 
-file = 'SampleCoordinates.txt'
-#file = 'GermanyCities.txt'
+#file = 'SampleCoordinates.txt'
+file = 'GermanyCities.txt'
 #file ='HungaryCities.txt'
 
 if file == 'SampleCoordinates.txt':

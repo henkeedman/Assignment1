@@ -42,17 +42,14 @@ def plot_points(coords, connection, path):
 
     '''
     line = []
-    mainline = []
     check = time.time()
+
     #Create lines between every connection
     for j, data in enumerate(connection):
         line.append((coords[data[0],: ], coords[data[1], :]))
 
     #Create the line showing the shortest path between two nodes
-
     mainline = [coords[path, :]]
-
-
     line_segments = LineCollection(line)
     mainline_segments = LineCollection(mainline, linewidths=10, colors='r')
     fig = plt.figure(figsize=(10, 15))
@@ -75,7 +72,7 @@ def construct_graph_connection(coord_list, radie):
             :return: connection: an array with all the nodes in range of eachother
                      connection_distance: ann array with the range between all nodes which are in range of eachother
             """
-    coord_list_temp = coord_list
+
     connection_distance = []
     connection = []
     for j, data in enumerate(coord_list):
@@ -83,7 +80,7 @@ def construct_graph_connection(coord_list, radie):
         y = data[1]
 
         '''Calculate the relative distance of the nodes'''
-        distance = np.hypot(coord_list[0]-x, coord_list[1]-y)
+        distance = np.hypot(coord_list[:, 0]-x, coord_list[:, 1]-y)
 
         '''add nodes which are in range'''
         for i, data in enumerate(distance):
@@ -93,7 +90,6 @@ def construct_graph_connection(coord_list, radie):
 
     connection_distance = np.array(connection_distance)
     connection = np.array(connection)
-    #connection = connection.reshape(len(connection_distance), 2)
     print(connection)
     return connection, connection_distance
 
@@ -107,7 +103,6 @@ def construct_fast_graph_connection(coord_list, radie):
                          connections: an NumPy array containing the indices which have connections
                 """
 
-    #coord_list = np.transpose(coord_list)
     coord_list_tree = scipy.spatial.cKDTree(coord_list)
     sparse_graph = scipy.spatial.cKDTree.sparse_distance_matrix(coord_list_tree, coord_list_tree, radie, p=2.)
     connections_ckd = coord_list_tree.query_ball_tree(coord_list_tree, radie)
@@ -120,7 +115,6 @@ def construct_fast_graph_connection(coord_list, radie):
             connections.append([j, item])
     connections = np.array(connections)
     connections = connections.reshape(len(connections), 2)
-
 
     return sparse_graph, connections
 

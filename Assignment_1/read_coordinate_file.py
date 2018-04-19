@@ -46,20 +46,17 @@ def plot_points(coords, connection, path):
     check = time.time()
     #Create lines between every connection
     for j, data in enumerate(connection):
-        line.append((coords[:, data[0]], coords[:, data[1]]))
+        line.append((coords[data[0],: ], coords[data[1], :]))
 
-    start = path[0]
     #Create the line showing the shortest path between two nodes
-    #for j, data in enumerate(path[1:-1]):
-        #mainline.append((coords[:, start], coords[:, data]))
+
     mainline = [coords[path, :]]
-        #start = data
-    #mainline.append((coords[:, start], coords[:, path[-1]]))
+
 
     line_segments = LineCollection(line)
     mainline_segments = LineCollection(mainline, linewidths=10, colors='r')
     fig = plt.figure(figsize=(10, 15))
-    plt.plot(coords[0], coords[1], 'ro', markersize=1)
+    plt.plot(coords[:,0], coords[:,1], 'ro', markersize=1)
     ax = fig.gca()
     ax.add_collection(line_segments)
     ax.add_collection(mainline_segments)
@@ -200,6 +197,7 @@ if choice == 'y':
     print('Tid för CkdTree = ',  time.time()-snabb_tid,'sekunder')
     min_distances, predexessor = dijkstra(csr, return_predecessors=True, indices=[start_node])
     path = compute_path(predexessor, start_node, end_node)
+    print(coords[path, 0],coords[path, 1])
     if choice2 == 'y':
         plot_points(coords,connection,path)
     print('Totaltid', time.time()-start_time,'sekunder')

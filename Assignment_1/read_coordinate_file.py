@@ -19,8 +19,7 @@ def read_coordinate_file(file):
     coords = []
 
     for line in file1:
-        line = line.strip()
-        line = line.strip('{} ')
+        line = line.strip('{} \n')
         (y, x) = line.split(",")
         ''' 
             x and y are expressed as latitude and longitude. These are converted with the Mercator projection (from Computer assignment 1)

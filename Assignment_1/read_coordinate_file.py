@@ -16,25 +16,20 @@ def read_coordinate_file(file):
     """
 
     file1 = open(file, 'r')
-    x_coords = []
-    y_coords = []
+    coords = []
 
     for line in file1:
-        line = line.strip()
-        line = line.strip('{')
-        line = line.strip('}')
+        line = line.strip('{} \n')
         (y, x) = line.split(",")
-        line.strip()
         ''' 
             x and y are expressed as latitude and longitude. These are converted with the Mercator projection (from Computer assignment 1)
             into x and y coordinates.
         '''
-        y_coords.extend([m.log((m.tan(m.pi/4+m.pi*float(y)/360)))])
-        x_coords.extend([float(x)*m.pi/180])
-
+        coord = [(float(x)*m.pi/180), (m.log((m.tan(m.pi/4+m.pi*float(y)/360))))]
+        coords.append(coord)
     file1.close()
-    coords = np.array([x_coords, y_coords])
-    return coords
+
+    return np.array(coords)
 
 
 def plot_points(coords, connection, path):
@@ -74,27 +69,25 @@ def plot_points(coords, connection, path):
     plt.show()
 
 
-def construct_graph_connection(coord_list, radius):
+def construct_graph_connection(coord_list, radie):
     """
             sorts out which nodes are in range of each other object.
             :param coord_list: the coordinates of each node
-            :param radius: the radius for what is considered in rang
+            :param radie: the radius for what is considered in rang
             :return: connection: an array with all the nodes in range of eachother
                      connection_distance: ann array with the range between all nodes which are in range of eachother
             """
     coord_list_temp = coord_list
     connection_distance = []
     connection = []
-    for j, data in enumerate(coord_list.transpose()):
+    for j, data in enumerate(coord_list):
         x = data[0]
         y = data[1]
 
         '''Calculate the relative distance of the nodes'''
-        coord_list_temp[0] = coord_list[0]-x
-        coord_list_temp[1] = coord_list[1]-y
-        distance = np.hypot(coord_list_temp[0], coord_list_temp[1])
+        distance = np.hypot(coord_list[0]-x, coord_list[1]-y)
 
-        '''remove nodes which isn't in range'''
+        '''add nodes which are in range'''
         for i, data in enumerate(distance):
             if data < radie:
                 connection.append([i, j])
@@ -102,7 +95,8 @@ def construct_graph_connection(coord_list, radius):
 
     connection_distance = np.array(connection_distance)
     connection = np.array(connection)
-    connection = connection.reshape(len(connection_distance), 2)
+    #connection = connection.reshape(len(connection_distance), 2)
+    print(connection)
     return connection, connection_distance
 
 
@@ -115,7 +109,7 @@ def construct_fast_graph_connection(coord_list, radie):
                          connections: an NumPy array containing the indices which have connections
                 """
 
-    coord_list = np.transpose(coord_list)
+    #coord_list = np.transpose(coord_list)
     coord_list_tree = scipy.spatial.cKDTree(coord_list)
     sparse_graph = scipy.spatial.cKDTree.sparse_distance_matrix(coord_list_tree, coord_list_tree, radie, p=2.)
     connections_ckd = coord_list_tree.query_ball_tree(coord_list_tree, radie)
@@ -141,7 +135,7 @@ def construct_graph(indices, distances, N):
                 :param size of matrix (N x N)
                 :return: returns an sparse array of the values"""
 
-    CSR_graph=scipy.sparse.csr_matrix((distances, np.transpose(indices)), shape=(N, N))
+    CSR_graph=scipy.sparse.csr_matrix((distances, indices), shape=(N, N))
     return CSR_graph
 
 

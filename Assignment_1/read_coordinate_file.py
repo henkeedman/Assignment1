@@ -28,7 +28,7 @@ def read_coordinate_file(file):
         coord = [(float(x)*m.pi/180), (m.log((m.tan(m.pi/4+m.pi*float(y)/360))))]
         coords.append(coord)
     file1.close()
-
+    print(coords)
     return np.array(coords)
 
 
@@ -50,10 +50,11 @@ def plot_points(coords, connection, path):
 
     start = path[0]
     #Create the line showing the shortest path between two nodes
-    for j, data in enumerate(path[1:-1]):
-        mainline.append((coords[:, start], coords[:, data]))
-        start = data
-    mainline.append((coords[:, start], coords[:, path[-1]]))
+    #for j, data in enumerate(path[1:-1]):
+        #mainline.append((coords[:, start], coords[:, data]))
+    mainline = [coords[path, :]]
+        #start = data
+    #mainline.append((coords[:, start], coords[:, path[-1]]))
 
     line_segments = LineCollection(line)
     mainline_segments = LineCollection(mainline, linewidths=10, colors='r')
@@ -171,8 +172,8 @@ elif choice != 'y':
 else:
     choice2 = input('Include plotting? (y/n)')
 
-#file = 'SampleCoordinates.txt'
-file = 'GermanyCities.txt'
+file = 'SampleCoordinates.txt'
+#file = 'GermanyCities.txt'
 #file ='HungaryCities.txt'
 
 if file == 'SampleCoordinates.txt':

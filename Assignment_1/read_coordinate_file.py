@@ -14,21 +14,21 @@ def read_coordinate_file(file):
                     :param file: file to be read
                     :return coords: NumPy array of the nodes and their coordinates
     """
-
+    timestart = time.time()
     file1 = open(file, 'r')
     coords = []
 
     for line in file1:
         line = line.strip('{} \n')
-        (y, x) = line.split(",")
+        (a, b) = line.split(",")
         ''' 
             x and y are expressed as latitude and longitude. These are converted with the Mercator projection (from Computer assignment 1)
             into x and y coordinates.
         '''
-        coord = [(float(x)*m.pi/180), (m.log((m.tan(m.pi/4+m.pi*float(y)/360))))]
+        coord = [(float(b)*m.pi/180), (m.log((m.tan(m.pi/4+m.pi*float(a)/360))))]
         coords.append(coord)
     file1.close()
-    print(coords)
+    print('Tid för read_coordinate_file = ', time.time()-timestart,'sekunder')
     return np.array(coords)
 
 
@@ -41,9 +41,8 @@ def plot_points(coords, connection, path):
     :param path: List of shortest path between the nodes
 
     '''
+    start_time = time.time()
     line = []
-    mainline = []
-    check = time.time()
     #Create lines between every connection
     for j, data in enumerate(connection):
         line.append((coords[data[0],: ], coords[data[1], :]))
@@ -63,51 +62,47 @@ def plot_points(coords, connection, path):
     ax.set_xlim((min(coords[0])), max(coords[0]))
     ax.set_ylim((min(coords[1])), max(coords[1]))
     plt.axis('Equal')
-    print('plottid=', time.time() - check, 'sekunder')
+    print('Tid för plot_points (exl.plt.show) =', time.time() - start_time, 'sekunder')
     plt.show()
 
 
 def construct_graph_connection(coord_list, radie):
     """
-            sorts out which nodes are in range of each other object.
+            sorts out which nodes are in range of each other.
             :param coord_list: the coordinates of each node
             :param radie: the radius for what is considered in rang
-            :return: connection: an array with all the nodes in range of eachother
-                     connection_distance: ann array with the range between all nodes which are in range of eachother
+            :return: connection: an array with all the nodes in range of each other
+                     connection_distance: an array with the range between all nodes which are in range of each other
             """
-    coord_list_temp = coord_list
+    start_time = time.time()
     connection_distance = []
     connection = []
     for j, data in enumerate(coord_list):
-        x = data[0]
-        y = data[1]
-
         '''Calculate the relative distance of the nodes'''
-        distance = np.hypot(coord_list[0]-x, coord_list[1]-y)
-
-        '''add nodes which are in range'''
+        distance = np.hypot(coord_list[:,0]-data[0], coord_list[:,1]-data[1])
+        '''save nodes which are in range'''
         for i, data in enumerate(distance):
             if data < radie:
-                connection.append([i, j])
+                connection.append([j, i])
                 connection_distance.append(data)
+
 
     connection_distance = np.array(connection_distance)
     connection = np.array(connection)
-    #connection = connection.reshape(len(connection_distance), 2)
-    print(connection)
+    print('Tid för construct_graph_connections = ',time.time()-start_time, 'sekunder')
     return connection, connection_distance
 
 
 def construct_fast_graph_connection(coord_list, radie):
     """
-                sorts out which nodes are in range of eachoter object.
+                sorts out which nodes are in range of eachoter.
                 :param coord_list: the coordinates of each node
                 :param radie: the radius for what is considered in range
-                :return: csr: an sparse matrix containing all the connections and their distance
+                :return: sparse_graph: an sparse matrix containing all the connections and their distance
                          connections: an NumPy array containing the indices which have connections
                 """
 
-    #coord_list = np.transpose(coord_list)
+    start_time = time.time()
     coord_list_tree = scipy.spatial.cKDTree(coord_list)
     sparse_graph = scipy.spatial.cKDTree.sparse_distance_matrix(coord_list_tree, coord_list_tree, radie, p=2.)
     connections_ckd = coord_list_tree.query_ball_tree(coord_list_tree, radie)
@@ -119,21 +114,21 @@ def construct_fast_graph_connection(coord_list, radie):
         for item in data:
             connections.append([j, item])
     connections = np.array(connections)
-    connections = connections.reshape(len(connections), 2)
-
+    print('Tid för construct_fast_graph_connections = ',time.time()-start_time,'sekunder')
 
     return sparse_graph, connections
 
 
-def construct_graph(indices, distances, N):
+def construct_graph(indices, distances, n):
     """
                 creates a csr matrix
                 :param indices: indices of the values
                 :param distances: the values to placed in the matrix
                 :param size of matrix (N x N)
                 :return: returns an sparse array of the values"""
-
-    CSR_graph=scipy.sparse.csr_matrix((distances, indices), shape=(N, N))
+    start_time = time.time()
+    CSR_graph = scipy.sparse.csr_matrix((distances, [indices[:, 0], indices[:, 1]]), shape=(n, n))
+    print('Tid för construct_graph =', time.time()-start_time,'sekunder')
     return CSR_graph
 
 
@@ -149,7 +144,13 @@ def compute_path(predecessor_matrix, start_node, end_node):
     i = start_node
     j = end_node
     path = []
-
+    while j != i:
+        path.append(j)
+        j = predecessor_matrix[0, j]
+    path.append(i)
+    path.reverse()
+    return path
+'''
     #Go through the predecessor matrix to save the data in a list
     while j != i:
         path = [j]+path
@@ -158,7 +159,7 @@ def compute_path(predecessor_matrix, start_node, end_node):
 
     path = [i]+path
     return path
-
+'''
 
 choice = input('Run fast version? (y/n)')
 if choice == 'n':
@@ -169,17 +170,17 @@ elif choice != 'y':
 else:
     choice2 = input('Include plotting? (y/n)')
 
-file = 'SampleCoordinates.txt'
+#file = 'SampleCoordinates.txt'
 #file = 'GermanyCities.txt'
-#file ='HungaryCities.txt'
+file ='HungaryCities.txt'
 
 if file == 'SampleCoordinates.txt':
     start_node = 0
     end_node = 5
     radie = 0.08
 elif file == 'GermanyCities.txt':
-    start_node = 10584
-    end_node = 1573
+    start_node = 1573
+    end_node = 10584
     radie = 0.0025
 else:
     start_node = 311
@@ -187,30 +188,32 @@ else:
     radie = 0.005
 
 
-start_time = time.time()
-coords = read_coordinate_file(file)
-
 
 if choice == 'y':
     snabb_tid = time.time()
+    coords = read_coordinate_file(file)
     csr, connection = construct_fast_graph_connection(coords, radie)
-    print('Tid för CkdTree = ',  time.time()-snabb_tid,'sekunder')
+    sexosjutid = time.time()
     min_distances, predexessor = dijkstra(csr, return_predecessors=True, indices=[start_node])
     path = compute_path(predexessor, start_node, end_node)
-    print(coords[path, 0],coords[path, 1])
+    print('Tid för 6+7 = ', time.time()-sexosjutid,'sekunder')
     if choice2 == 'y':
         plot_points(coords,connection,path)
-    print('Totaltid', time.time()-start_time,'sekunder')
+    print('Totaltid', time.time()-snabb_tid,'sekunder')
 
 else:
+    start_time = time.time()
+    coords = read_coordinate_file(file)
     connection, connection_distance = construct_graph_connection(coords, radie)
-    N = coords.size/2
+    N = len(coords)
     csr = construct_graph(connection, connection_distance, N)
+    sexosjutid = time.time()
     min_distances, predexessor = scipy.sparse.csgraph.dijkstra(csr, return_predecessors=True, indices=[start_node])
     path = compute_path(predexessor, start_node, end_node)
-    print('Totaltid exl. plot', time.time() - start_time, 'sekunder')
+    print('Tid för 6+7 = ', time.time()-sexosjutid,'sekunder')
     if choice2 == 'y':
         plot_points(coords, connection,path)
+    print('Totaltid', time.time() - start_time, 'sekunder')
 
 print('Distance = ', min_distances[0, end_node])
 print('best path = ', path)

@@ -146,6 +146,8 @@ def compute_path(predecessor_matrix, start_node, end_node):
         path.append(j)
         j = predecessor_matrix[0, j]
     path.append(i)
+
+    #reverse it so that it goes from start node to end node instead
     path.reverse()
     return path
 
@@ -196,7 +198,14 @@ else:
     N = len(coords)
     csr = construct_graph(connection, connection_distance, N)
     sexosjutid = time.time()
-    min_distances, predexessor = scipy.sparse.csgraph.dijkstra(csr, return_predecessors=True, indices=[start_node])
+
+    # Djikstra computes the shortest path between nodes, with no indices given it will compute the path between every
+    #node but if given indices it will only compute the paths to the nodes given by the indices. To save computational
+    #effort, the paths are only calculated to the start node.
+    #return_predecessors gives, if true, an NxN array with the preceddors of the node, meaning if you go to the column
+    #specified at the column you are currently at and do so until you've reached the the column where column=row you've
+    #taken the shortest path from the node represented by the starting column to the node represented by the row
+    min_distances, predexessor = dijkstra(csr, return_predecessors=True, indices=[start_node])
     path = compute_path(predexessor, start_node, end_node)
     print('Tid för 6+7 = ', time.time()-sexosjutid,'sekunder')
     if choice2 == 'y':

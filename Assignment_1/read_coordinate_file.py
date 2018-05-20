@@ -14,7 +14,6 @@ def read_coordinate_file(file):
                     :param file: file to be read
                     :return coords: NumPy array of the nodes and their coordinates
     """
-    timestart = time.time()
     with open(file, 'r') as file1:
         coords = []
 
@@ -27,7 +26,6 @@ def read_coordinate_file(file):
             '''
             coord = [(float(b)*m.pi/180), (m.log((m.tan(m.pi/4+m.pi*float(a)/360))))]
             coords.append(coord)
-    print('Tid för read_coordinate_file = ', time.time()-timestart,'sekunder')
     return np.array(coords)
 
 
@@ -73,7 +71,6 @@ def construct_graph_connection(coord_list, radie):
              connection_distance: an array with the range between all nodes which are in range of each other
     """
 
-    start_time = time.time()
     connection_distance = []
     connection = []
     for j, data in enumerate(coord_list):
@@ -90,10 +87,9 @@ def construct_graph_connection(coord_list, radie):
 
     connection_distance = np.array(connection_distance)
     connection = np.array(connection)
-    print('Tid för construct_graph_connections = ',time.time()-start_time, 'sekunder')
     return connection, connection_distance
 
-
+'''
 def construct_fast_graph_connection(coord_list, radie):
     """
                 sorts out which nodes are in range of eachoter.
@@ -117,27 +113,35 @@ def construct_fast_graph_connection(coord_list, radie):
     connections = np.array(connections)
     print('Tid för construct_fast_graph_connections = ',time.time()-start_time,'sekunder')
     return sparse_graph, connections
-
+'''
+def construct_fast_graph_connection(coord_list, radie):
     """
+                sorts out which nodes are in range of eachoter.
+                :param coord_list: the coordinates of each node
+                :param radie: the radius for what is considered in range
+                :return: sparse_graph: an sparse matrix containing all the connections and their distance
+                         connections: an NumPy array containing the indices which have connections
+                """
+
     connection_distance = []
     connection = []
+    coord_list_tree = scipy.spatial.cKDTree(coord_list)
     for j, data in enumerate(coord_list):
-        '''Calculate the relative distance of the nodes'''
         '''save nodes which are in range'''
-        connections_ckd = coord_list_tree.query_ball_point(coord_list_tree, radie, data)
+        connections_ckd = coord_list_tree.query_ball_point(data, radie)
         for i in connections_ckd:
-            if i < j:
-                data = np.hypot(coord_list[i,0]-data[0], coord_list[i,1]-data[1])
-                if data < radie:
+            #only save upper half of the matrix
+            if i > j:
+                    #save the connection
                     connection.append([j, i])
-                    connection_distance.append(data)
-
+                    #save the relative distance of the nodes
+                    connection_distance.append(np.hypot(coord_list[i,0]-data[0], coord_list[i,1]-data[1]))
 
     connection_distance = np.array(connection_distance)
     connection = np.array(connection)
-    print('Tid för construct_graph_connections = ',time.time()-start_time, 'sekunder')
+
+
     return connection, connection_distance
-    """
 
 
 def construct_graph(indices, distances, n):
@@ -148,9 +152,7 @@ def construct_graph(indices, distances, n):
     :param size of matrix (N x N)
     :return: returns an sparse array of the values
     """
-    start_time = time.time()
     CSR_graph = scipy.sparse.csr_matrix((distances, [indices[:, 0], indices[:, 1]]), shape=(n, n))
-    print('Tid för construct_graph =', time.time()-start_time,'sekunder')
     return CSR_graph
 
 
@@ -166,6 +168,7 @@ def compute_path(predecessor_matrix, start_node, end_node):
     i = start_node
     j = end_node
     path = []
+
     #Go through the predecessor matrix to save the data in a list
     while j != i:
         path.append(j)
@@ -186,9 +189,10 @@ elif choice != 'y':
 else:
     choice2 = input('Include plotting? (y/n)')
 
+
 #file = 'SampleCoordinates.txt'
-#file = 'GermanyCities.txt'
-file ='HungaryCities.txt'
+file = 'GermanyCities.txt'
+#file ='HungaryCities.txt'
 
 if file == 'SampleCoordinates.txt':
     start_node = 0
@@ -204,40 +208,39 @@ else:
     radie = 0.005
 
 
+
+tot_time = time.time()
+coords = read_coordinate_file(file)
+print('read_coordinate_file tid = ',time.time()-tot_time,'sekunder')
 if choice == 'y':
-    snabb_tid = time.time()
-    coords = read_coordinate_file(file)
-    csr, connection = construct_fast_graph_connection(coords, radie)
-    sexosjutid = time.time()
-    min_distances, predexessor = dijkstra(csr, return_predecessors=True, indices=start_node, directed=False)
-    path = compute_path(predexessor, start_node, end_node)
-    print('Tid för 6+7 = ', time.time()-sexosjutid,'sekunder')
-    if choice2 == 'y':
-        plot_points(coords,connection,path)
-    print('Totaltid', time.time()-snabb_tid,'sekunder')
+    start_time = time.time()
+    connection, connection_distance = construct_fast_graph_connection(coords, radie)
+    print('construct_fast_graph_connection tid = ',time.time()- start_time,'sekunder')
 
 else:
     start_time = time.time()
-    coords = read_coordinate_file(file)
     connection, connection_distance = construct_graph_connection(coords, radie)
-    N = len(coords)
-    csr = construct_graph(connection, connection_distance, N)
-    sexosjutid = time.time()
+    print('construct_graph_connection tid = ',time.time()- start_time,'sekunder')
 
-    # Djikstra computes the shortest path between nodes, with no indices given it will compute the path between every
-    #node but if given indices it will only compute the paths to the nodes given by the indices. To save computational
-    #effort, the paths are only calculated to the start node.
-    #return_predecessors gives, if true, an NxN array with the preceddors of the node, meaning if you go to the column
-    #specified at the column you are currently at and do so until you've reached the the column where column=row you've
-    #taken the shortest path from the node represented by the starting column to the node represented by the row
-    #Directed =  false meanse that we tell the program that if it is possible to go from node a-b then it is also possible
-    #to go from b-a and it will be the same distance.
-    min_distances, predexessor = dijkstra(csr, return_predecessors=True, indices=[start_node])
-    path = compute_path(predexessor, start_node, end_node)
-    print('Tid för 6+7 = ', time.time()-sexosjutid,'sekunder')
-    if choice2 == 'y':
-        plot_points(coords, connection,path)
-    print('Totaltid', time.time() - start_time, 'sekunder')
+N = len(coords)
+start_time = time.time()
+csr = construct_graph(connection, connection_distance, N)
+print('construct_graph tid = ',time.time()- start_time,'sekunder')
+sexosjutid = time.time()
+# Djikstra computes the shortest path between nodes, with no indices given it will compute the path between every
+#node but if given indices it will only compute the paths to the nodes given by the indices. To save computational
+#effort, the paths are only calculated to the start node.
+#return_predecessors gives, if true, an NxN array with the preceddors of the node, meaning if you go to the column
+#specified at the column you are currently at and do so until you've reached the the column where column=row you've
+#taken the shortest path from the node represented by the starting column to the node represented by the row
+#Directed =  false meanse that we tell the program that if it is possible to go from node a-b then it is also possible
+#to go from b-a and it will be the same distance.
+min_distances, predexessor = dijkstra(csr, return_predecessors=True, indices=start_node, directed=False)
+path = compute_path(predexessor, start_node, end_node)
+print('Tid för 6+7 = ', time.time()-sexosjutid,'sekunder')
+if choice2 == 'y':
+    plot_points(coords, connection,path)
+print('Totaltid', time.time() - tot_time, 'sekunder')
 
 print('Distance = ', min_distances[end_node])
 print('best path = ', path)
